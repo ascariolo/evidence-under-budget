@@ -1,0 +1,13 @@
+# Core numerics
+numpy>=1.24
+scipy>=1.10
+
+# Embeddings & tokenization (local, no paid API)
+sentence-transformers>=2.2
+tiktoken>=0.5
+
+# Exact optimization
+pulp>=2.7
+
+# Visualization
+matplotlib>=3.7
