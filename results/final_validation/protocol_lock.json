@@ -1,0 +1,72 @@
+{
+  "protocol_version": "7.0-final-validation",
+  "status": "LOCKED",
+  "locked_at_utc": "2026-09-18T20:29:05Z",
+  "document": "docs/final_validation_protocol.md",
+  "document_sha256": "ff807b7d389e2e0c8397acb4a2db90b3b790da155ec7784f37129dfc91d0daa5",
+  "git_commit": "b392aabe60b31cd26703f19598ff3d11d9f75a7d",
+  "git_branch": "final-validation-v7",
+  "constants": {
+    "DATASET": "hotpotqa/hotpot_qa, distractor/validation (HuggingFace parquet)",
+    "N_QUESTIONS": 500,
+    "SAMPLE_SEED": 7000,
+    "BOOTSTRAP_SEED": 7001,
+    "PERMUTATION_SEED": 7002,
+    "PERMUTATION_FLIPS": 10000,
+    "BOOTSTRAP_RESAMPLES": 10000,
+    "RHO_LEVELS": [
+      0.1,
+      0.25,
+      0.5
+    ],
+    "LAMBDA_OBJ": 0.1,
+    "LAMBDA_MMR": 0.5,
+    "EMBEDDER": "all-MiniLM-L6-v2",
+    "TOKENIZER": "tiktoken cl100k_base",
+    "CANDIDATE_UNIT": "sentence",
+    "ARMS": [
+      "top_k",
+      "greedy_objective",
+      "greedy_token_aware",
+      "mmr",
+      "token_aware_best_singleton",
+      "ilp"
+    ],
+    "CONFIRMATORY_COMPARISON": "greedy_token_aware vs greedy_objective",
+    "CONFIRMATORY_FAMILY_SIZE": 3,
+    "CONFIRMATORY_FAMILY_MEMBERS": [
+      "rho=0.10",
+      "rho=0.25",
+      "rho=0.50"
+    ],
+    "TEST": "paired sign-flip permutation, two-sided, zeros retained",
+    "MULTIPLICITY": "Holm, alpha=0.05",
+    "PRIMARY_OUTCOME": "supporting-fact coverage C(S) = |S cap G(q)| / |G(q)|",
+    "PRIMARY_ESTIMAND": "Delta_C = C(TA) - C(GO)",
+    "SESOI": null,
+    "ILP_SCOPE": "rho=0.25, first 100 sampled questions, CBC 60s cap, single thread",
+    "DIAGNOSTIC": "D = 1 - Kendall tau_b(r, r/w), exploratory, outside the family"
+  },
+  "write_once": {
+    "policy": "The locked document and this record are read-only (mode 444). Results are written once to version-named files under results/final_validation/ and are never overwritten.",
+    "verification": "experiments/final_validation/protocol.py must re-hash the document and refuse to run if it differs from document_sha256."
+  },
+  "environment": {
+    "python": "3.13.9",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "packages": {
+      "numpy": "2.5.3",
+      "scipy": "1.18.1",
+      "sentence_transformers": "6.0.1",
+      "tiktoken": "0.14.0",
+      "pulp": "3.3.2",
+      "sklearn": "1.9.1",
+      "statsmodels": "0.15.0",
+      "pandas": "3.0.5"
+    }
+  },
+  "untouched": [
+    "v6 / v6.2 locked protocol, code and results",
+    "results/elasticity/stage4_variance_pilot_SEALED_raw.json (never inspected)"
+  ]
+}
