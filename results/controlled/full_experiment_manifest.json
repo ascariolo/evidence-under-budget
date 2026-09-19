@@ -1,0 +1,197 @@
+{
+  "experiment": "controlled_full_experiment_step4",
+  "protocol_version": "0.1-pilot",
+  "protocol_lock": {
+    "locked_at": "step 3C.1",
+    "seeds": "0-39 fixed; no seed resampled, excluded or reordered",
+    "beta_criterion": "|mean(beta_hat over the fixed seed ensemble) - beta_target| <= BETA_TOLERANCE, applied per condition. Per-seed deviations are reported but are NOT an acceptance criterion.",
+    "beta_tolerance": 0.1,
+    "beta_tolerance_widened": false,
+    "beta_targets_changed": false,
+    "n_docs": 25,
+    "generator_parameters_changed": false,
+    "optimizer_code_changed": false,
+    "benchmark_code_changed": false,
+    "experimental_factors_changed": false,
+    "redundancy_interpretation": "LOW vs MODERATE; not calibrated to the v0 corpus",
+    "step_3C_pass_remains_valid": true
+  },
+  "design_deviations": [
+    {
+      "id": "DEV-1",
+      "topic": "Condition D token cap is circular in the design text",
+      "design_text": "token cost multiplied by m_adv = 6, capped at 0.45 * W_sat",
+      "problem": "W_sat is computed from the tokens, so a cap expressed in terms of W_sat cannot be applied while the tokens are being assigned.",
+      "resolution": "Two-pass. Pass 1 computes W_sat on the pre-intervention tokens (w_sat_pre). Pass 2 applies the multiplier capped at 0.45 * w_sat_pre, then recomputes the final W_sat on the modified instance. Both values are recorded. This preserves the stated intent (adversarial documents stay individually feasible at the medium budget) without circularity, at the cost of one extra ILP solve for condition D only.",
+      "status": "implemented; needs sign-off"
+    },
+    {
+      "id": "DEV-2",
+      "topic": "Redundancy calibration target is unreachable by the stated construction",
+      "design_text": "gamma = 0.15 -> mean off-diagonal similarity ~0.2; gamma = 0.70 -> ~0.45, 'calibrated to the measured v0 corpus (mean pairwise cosine 0.405)'",
+      "problem": "Measured: gamma = 0.15 -> 0.094, gamma = 0.70 -> 0.194. With K = 5 topics, cross-topic pairs contribute ~0 and are 80% of all pairs, so mean similarity ceilings at about r_bar^2 + 0.93 * gamma / K ~ 0.26 even at gamma = 1. The v0 level of 0.405 is NOT reachable at K = 5.",
+      "resolution": "LOCKED at step 3C by explicit instruction: K, gamma and the construction are UNCHANGED. The factor is redefined in wording only - it is a LOW vs MODERATE redundancy contrast, not a calibration to the v0 corpus, and the calibration claim has been retracted from the design document. gamma is implemented exactly as specified (0.15 / 0.70), which still gives a genuine ~2x redundancy contrast and is non-degenerate. Only the design's claim that 'high' equals the v0 redundancy level is false. Changing K, gamma, or the construction would redefine an experimental condition and was NOT done.",
+      "status": "LOCKED at step 3C - wording retracted, parameters unchanged"
+    },
+    {
+      "id": "DEV-3",
+      "topic": "Beta tolerance was not specified in the design",
+      "design_text": "'within the tolerance specified by the design'",
+      "problem": "No tolerance is stated anywhere in the design document.",
+      "resolution": "BETA_TOLERANCE = 0.10 on |mean(beta_hat) - target| across seeds, chosen before measuring and recorded here.",
+      "status": "LOCKED at step 3C; criterion disambiguated at 3C.1 (see DEV-4)"
+    },
+    {
+      "id": "DEV-4",
+      "topic": "Beta criterion was ambiguous between per-condition mean and per-seed",
+      "design_text": "step 3C text asked to verify |beta_hat - beta_target| <= 0.10 'for each condition and seed', while protocol.py implemented the criterion on the per-condition mean.",
+      "problem": "The two readings disagree. The aggregate criterion passes for A, B and C with 3-4x margin; the per-seed reading fails 40-60% of instances. Per-instance sd(beta_hat) is 0.15-0.19, larger than the 0.10 tolerance, so no generator at N=25 could satisfy the per-seed reading.",
+      "resolution": "RESOLVED at step 3C.1 by explicit decision: beta is a POPULATION-LEVEL parameter of the generator, so the locked criterion is |mean(beta_hat across seeds) - beta_target| <= 0.10 per condition. The per-seed criterion is explicitly NOT required. Per-seed values remain reported as estimator variability. No tolerance was widened, no seed resampled, no generator parameter changed.",
+      "status": "RESOLVED and LOCKED at step 3C.1"
+    }
+  ],
+  "timestamp_utc": "2026-09-14T22:40:10Z",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39
+  ],
+  "n_seeds": 40,
+  "rl_conditions": {
+    "A": {
+      "name": "independent",
+      "rho_c": 0.0,
+      "target_beta": 0.0,
+      "adversarial": false
+    },
+    "B": {
+      "name": "positive_sublinear",
+      "rho_c": 0.5,
+      "target_beta": 0.5,
+      "adversarial": false
+    },
+    "C": {
+      "name": "negative",
+      "rho_c": -0.5,
+      "target_beta": -0.5,
+      "adversarial": false
+    },
+    "D": {
+      "name": "adversarial_mismatch",
+      "rho_c": 0.0,
+      "target_beta": null,
+      "adversarial": true
+    }
+  },
+  "redundancy_levels": {
+    "low": 0.15,
+    "high": 0.7
+  },
+  "budget_levels": {
+    "tight": 0.25,
+    "medium": 0.6,
+    "loose": 1.5
+  },
+  "generator_parameters": {
+    "n_docs": 25,
+    "embed_dim": 64,
+    "n_topics": 5,
+    "relevance_beta_a": 2.0,
+    "relevance_beta_b": 3.0,
+    "relevance_min": 0.05,
+    "relevance_max": 0.6,
+    "log_token_mu": 4.343805421853684,
+    "log_token_sigma": 0.5,
+    "token_min": 8,
+    "token_max": 400,
+    "adversarial_top_k": 4,
+    "adversarial_multiplier": 6.0,
+    "adversarial_cap_fraction": 0.45
+  },
+  "optimizer_parameters": {
+    "objective_lambda": 0.1,
+    "mmr_lambda": 0.5,
+    "stopping_policy": "positive_marginal_gain"
+  },
+  "solver_configuration": {
+    "solver": "PULP_CBC_CMD",
+    "time_limit_s": 600.0,
+    "scope": "full_corpus",
+    "linearization": "y_ij >= x_i + x_j - 1, y continuous"
+  },
+  "beta_criterion": "|mean(beta_hat over the fixed seed ensemble) - beta_target| <= BETA_TOLERANCE, applied per condition. Per-seed deviations are reported but are NOT an acceptance criterion.",
+  "methods": [
+    "top_k",
+    "mmr",
+    "greedy_objective",
+    "greedy_token_aware",
+    "ilp"
+  ],
+  "primary_estimand": "Delta_gap = gap(greedy_objective) - gap(greedy_token_aware) = score(greedy_token_aware) - score(greedy_objective); gap measured in ABSOLUTE objective units",
+  "analysis_groups": {
+    "ABC": "synthetic factorial, pooled",
+    "D_separate": "adversarial condition, never pooled with ABC",
+    "E_separate": "realism anchor, never pooled with synthetic"
+  },
+  "git": {
+    "commit": "8fe4d34b2106b218b6f5ff367b747dfe448d3b15",
+    "describe": "v0-original-experiment-dirty",
+    "dirty": true
+  },
+  "python_version": "3.13.9",
+  "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "packages": {
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "pulp": "3.3.2",
+    "statsmodels": "0.15.0",
+    "pandas": "3.0.5",
+    "sentence-transformers": "6.0.1",
+    "tiktoken": "0.14.0",
+    "matplotlib": "3.11.2"
+  },
+  "n_rows": 5400,
+  "runtime_minutes": 24.316606199741365,
+  "notes": [
+    "Data collection only; no aggregate statistic computed here.",
+    "A heuristic is never described as optimal: solve_status carries heuristic_no_guarantee for all four heuristics.",
+    "Condition D and arm E are tagged via analysis_group and must not be pooled with ABC."
+  ]
+}

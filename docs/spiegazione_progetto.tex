@@ -1,0 +1,321 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[most]{tcolorbox}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+\setlist{itemsep=0.2em,topsep=0.3em}
+\renewcommand{\arraystretch}{1.3}
+
+\newtcolorbox{nota}[1][]{colback=gray!6,colframe=gray!60,boxrule=0.5pt,arc=2pt,left=6pt,right=6pt,top=4pt,bottom=4pt,#1}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\title{Spiegazione del progetto: da v0 a oggi}
+\author{Appunti personali}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{nota}
+Pensati per chi viene da ML classico (regressione, classificazione) e non ha mai fatto information retrieval.
+\end{nota}
+
+\tableofcontents
+\newpage
+
+%======================================================================
+\section{Il problema di partenza}
+
+Un LLM riceve un \textbf{prompt}. Il prompt ha una lunghezza massima, misurata in \textbf{token}. Un token è un pezzo di parola: in inglese, circa 0,75 parole per token. Più token metti nel prompt, più l'LLM costa ed è lento, e spesso risponde peggio.
+
+Un sistema \textbf{RAG} (Retrieval-Augmented Generation) funziona così:
+\begin{enumerate}
+  \item arriva una domanda dell'utente (la \textbf{query});
+  \item si cercano in un archivio dei documenti che potrebbero contenere la risposta. Questa è la fase di \textbf{retrieval} (recupero);
+  \item alcuni di quei documenti vengono incollati nel prompt insieme alla domanda;
+  \item l'LLM risponde usando quei documenti.
+\end{enumerate}
+
+Questo progetto riguarda \textbf{solo il passo 3}. Hai $N$ documenti candidati (negli esperimenti $N=25$) e un budget massimo di token $W_{\max}$. Devi scegliere \emph{quali} documenti mettere nel prompt.
+
+%======================================================================
+\section{Come si misura un documento}
+
+\textbf{Embedding.} Una rete neurale (sentence-transformers) trasforma un testo in un vettore di numeri, per esempio di 384 dimensioni. È un vettore di feature. Testi con significato simile danno vettori che puntano in direzioni simili.
+
+\textbf{Cosine similarity.} È il coseno dell'angolo tra due vettori. Vale 1 se puntano nella stessa direzione e 0 se sono ortogonali. Serve per due cose:
+\begin{itemize}
+  \item \textbf{rilevanza} $r_i$: similarità tra la query e il documento $i$. Dice quanto il documento c'entra con la domanda;
+  \item \textbf{ridondanza} $\mathrm{sim}(i,j)$: similarità tra due documenti. Se è alta, dicono più o meno la stessa cosa.
+\end{itemize}
+
+\textbf{Costo} $w_i$: il numero di token del documento $i$.
+
+%======================================================================
+\section{La funzione obiettivo}
+
+Dato un sottoinsieme $S$ di documenti:
+\[
+\mathrm{Score}(S) \;=\; \sum_{i \in S} r_i \;-\; \lambda \sum_{\substack{i<j \\ i,j \in S}} \mathrm{sim}(i,j)
+\qquad\text{con vincolo}\qquad
+\sum_{i \in S} w_i \le W_{\max}.
+\]
+
+\begin{itemize}
+  \item La prima parte premia i documenti rilevanti.
+  \item La seconda punisce il mettere insieme documenti che si ripetono.
+  \item $\lambda = 0{,}1$ regola quanto pesa la punizione.
+\end{itemize}
+
+In ottimizzazione, scegliere oggetti con un valore e un peso sotto una capacità massima si chiama \textbf{knapsack problem}. Qui il valore non è una semplice somma, perché c'è il termine sulle coppie. Per questo è un \textbf{Quadratic Knapsack Problem}, che è NP-hard: trovare la soluzione migliore esatta diventa rapidamente costoso al crescere di $N$.
+
+%======================================================================
+\section{I metodi confrontati}
+
+Tutti prendono in input gli stessi $r$, $\mathrm{sim}$, $w$ e $W_{\max}$, e restituiscono un sottoinsieme $S$.
+
+\begin{center}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.6cm} X}
+\toprule
+\textbf{Metodo} & \textbf{Come sceglie} \\
+\midrule
+\code{top\_k} & Ordina per rilevanza $r$ e aggiunge documenti finché il budget lo permette. Ignora ridondanza e lunghezza. \\
+MMR (Maximal Marginal Relevance) & Metodo classico del retrieval. A ogni passo aggiunge il documento con il miglior compromesso tra rilevanza e differenza da quelli già scelti. \\
+\code{greedy\_objective} & A ogni passo calcola il \textbf{guadagno marginale} $\Delta_i$: di quanto sale Score se aggiungo $i$? Poi aggiunge il documento con $\Delta_i$ più grande. \\
+\code{greedy\_token\_aware} & Uguale, ma sceglie il documento con $\Delta_i / w_i$ più grande, cioè il guadagno \textbf{per token}. \\
+ILP (Integer Linear Programming) & Un solver matematico esatto (PuLP/CBC). Trova la soluzione \textbf{ottima vera}, che chiamiamo OPT. È lento, ma su $N=25$ funziona. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Il guadagno marginale di aggiungere $i$ all'insieme corrente $S$ è:
+\[
+\Delta_i = r_i - \lambda \sum_{j \in S} \mathrm{sim}(i,j).
+\]
+
+I due greedy si fermano quando nessun documento rimasto entra nel budget, oppure quando nessuno ha guadagno positivo.
+
+\begin{nota}
+\textbf{Gap} $= \mathrm{OPT} - \mathrm{Score}(\text{metodo})$. È quanto un metodo perde rispetto all'ottimo. Svolge il ruolo della ``ground truth'' nel ML supervisionato: sai qual è la risposta giusta e misuri l'errore.
+\end{nota}
+
+%======================================================================
+\section{v0: cosa c'era all'inizio}
+
+Il README sosteneva che il metodo token-aware fosse migliore. L'audit ha trovato problemi nel codice:
+\begin{itemize}
+  \item il solver ILP a volte non trovava l'ottimo, ma il codice lo trattava comunque come ottimo;
+  \item l'``MMR'' implementato non era il vero MMR;
+  \item i metodi usavano regole di stop diverse, quindi il confronto non era equo;
+  \item alcune metriche (densità, latenza) erano calcolate o descritte in modo fuorviante.
+\end{itemize}
+
+In più c'era un solo run su pochi dati, senza statistica: nessuna ripetizione, nessun intervallo di confidenza.
+
+v0 è stato conservato così com'era, come riferimento storico.
+
+%======================================================================
+\section{Step 1--2: riparazione e rivalutazione}
+
+\begin{itemize}
+  \item \textbf{Step 1.} Ho corretto il codice: il solver ora dichiara se ha davvero dimostrato l'ottimo, l'MMR è quello vero e la regola di stop è comune a tutti. Ho aggiunto 44 test.
+  \item \textbf{Step 2.} Ho rifatto il benchmark originale con molti \textbf{seed} e con statistica vera.
+\end{itemize}
+
+\begin{nota}
+\textbf{Cos'è un seed qui.} Ogni seed genera un problema casuale diverso: documenti, rilevanze e lunghezze. Un seed equivale a \textbf{un'osservazione indipendente} nel dataset dell'esperimento. 60 seed significano 60 problemi indipendenti.
+\end{nota}
+
+%======================================================================
+\section{Step 3--5: il benchmark controllato}
+
+\textbf{Problema.} Con i dati reali non puoi controllare le proprietà dei documenti. Per esempio, non puoi decidere se i documenti lunghi siano più o meno rilevanti di quelli corti.
+
+\textbf{Soluzione.} Un \textbf{generatore sintetico}: si creano problemi artificiali in cui queste proprietà sono dei parametri. È un \textbf{disegno sperimentale}: variabili indipendenti controllate, una variabile risposta misurata.
+
+\begin{itemize}
+  \item \textbf{Step 3.} Ho costruito il generatore, poi fatto un pilota e un pre-flight per verificare che generasse davvero ciò che dichiarava.
+  \item \textbf{Step 4.} L'esperimento completo: 5400 righe di risultati.
+  \item \textbf{Step 5.} Un audit statistico dei risultati. Ha scoperto che una conclusione precedente (``nessuna evidenza che token-aware aiuti'') dipendeva da \emph{quali budget} erano stati scelti, non da un vero effetto nullo.
+\end{itemize}
+
+\begin{nota}
+Lezione: \textbf{l'effetto dipende fortemente dal budget.} Da qui nasce l'esperimento successivo.
+\end{nota}
+
+%======================================================================
+\section{Step 6: l'esperimento di ``elasticità''}
+
+\subsection{La domanda}
+
+Dividere per i token ($\Delta_i / w_i$ invece di $\Delta_i$) cambia la scelta \textbf{solo se} l'ordinamento per rilevanza è diverso dall'ordinamento per rilevanza per token.
+\begin{itemize}
+  \item Se i documenti più rilevanti sono anche i più corti, i due ordinamenti coincidono, quindi i due greedy scelgono le stesse cose.
+  \item Se i documenti più rilevanti sono i più lunghi, i due ordinamenti divergono, quindi i due greedy scelgono cose diverse.
+\end{itemize}
+
+\begin{nota}
+\textbf{Domanda:} come cambia il vantaggio di token-aware al variare della \textbf{correlazione tra rilevanza e lunghezza}, e al variare del budget?
+\end{nota}
+
+\subsection{Il disegno (in termini ML/statistici)}
+
+\textbf{Fattori controllati:}
+\begin{itemize}
+  \item $\beta$: la correlazione tra rilevanza e lunghezza, con 6 livelli da $-0{,}5$ a $2$. Si genera con una \textbf{copula gaussiana}, una tecnica per produrre due variabili con distribuzioni marginali fissate e una dipendenza scelta a piacere. Così cambia solo la dipendenza, non la distribuzione della rilevanza o della lunghezza;
+  \item \textbf{budget}: 3 livelli, tight / medium / loose, pari a $0{,}25$ / $0{,}60$ / $1{,}50 \times W_{\text{sat}}$. $W_{\text{sat}}$ è circa il budget oltre il quale il vincolo sui token smette di essere stringente. ``Loose'' vuol dire che il budget è quasi abbondante;
+  \item \textbf{ridondanza} $\gamma$: 2 livelli.
+\end{itemize}
+
+\textbf{Misura di divergenza:}
+\[
+D = 1 - \tau_{\text{Kendall}}\big(\text{ordinamento per } r,\ \text{ordinamento per } r/w\big).
+\]
+Kendall $\tau$ è una correlazione tra ranking: vale 1 se i due ordinamenti sono identici. $D=0$ vuol dire ordinamenti uguali; $D$ grande vuol dire molto diversi.
+
+\textbf{Variabile risposta (estimando):}
+\[
+x = \mathrm{Score}(\text{token\_aware}) - \mathrm{Score}(\text{objective}).
+\]
+$x>0$ vuol dire che token-aware ha fatto meglio. Spesso $x = 0$ \emph{esattamente}, perché i due metodi scelgono lo stesso insieme. È una variabile \textbf{zero-inflated}: una massa di zeri più una parte continua.
+
+\textbf{Struttura dei dati.} Ogni seed viene valutato in tutte le combinazioni di $\beta$, budget e ridondanza. Sono \textbf{misure ripetute sulla stessa unità}, come un disegno appaiato o a blocchi.
+
+\subsection{I test (9, decisi in anticipo)}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.6cm} X}
+\toprule
+\textbf{Test} & \textbf{Cosa fa} \\
+\midrule
+Friedman & Versione non parametrica, basata sui ranghi, dell'ANOVA a misure ripetute. Chiede se $x$ cambia al variare di $\beta$. \\
+Contrasti & Confronti specifici, per esempio il $\beta$ più basso contro il più alto. \\
+T8 & Chiede se la \textbf{probabilità} che i due metodi scelgano insiemi diversi cresce con $D$. È una pendenza, come in una regressione. \\
+Sign-flip permutation test & Test non parametrico per dati appaiati. Sotto l'ipotesi nulla, il segno di $x$ è casuale: si ribaltano i segni a caso 10.000 volte per costruire la distribuzione nulla. \\
+Holm & Correzione per test multipli, come Bonferroni ma meno conservativa. Con 9 test, qualcuno risulta ``significativo'' per caso se non correggi. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Pre-registrazione e ``lock''}
+
+Tutto (ipotesi, test, soglie, numero di seed) viene \textbf{fissato prima di vedere i dati} e ``bloccato'', cioè salvato con un hash crittografico che dimostra che non è stato cambiato dopo.
+
+Serve a evitare il \textbf{p-hacking}: provare tante analisi e riportare quella che viene significativa. v6.0 $\to$ v6.1 $\to$ v6.2 sono le versioni successive del protocollo. Ogni modifica è stata un ``amendment'' documentato. \textbf{v6.2 è la versione bloccata.}
+
+%======================================================================
+\section{Il numero di seed: power analysis}
+
+Quanti seed servono? Dipende da due cose:
+\begin{enumerate}
+  \item \textbf{quanto è grande l'effetto che vuoi rilevare} ($\delta$);
+  \item \textbf{quanto sono variabili i dati} ($\sigma^2$).
+\end{enumerate}
+Più rumore o effetto più piccolo richiedono più seed. È la power analysis classica.
+
+\subsection{SESOI}
+
+\textbf{SESOI} (Smallest Effect Size Of Interest) è la differenza più piccola che ritieni importante nella pratica. Nel protocollo v6.2:
+\[
+\delta = 3\% \text{ di OPT} \qquad \text{(fissato separatamente per ogni budget)}.
+\]
+In parole: ``mi interessa se token-aware guadagna almeno il 3\% dello score ottimo''.
+
+\subsection{Come si stima la varianza}
+
+Serve un \textbf{pilota}: un piccolo esperimento su seed separati (2000--2039, 40 seed) usato \textbf{solo} per stimare la variabilità, non per testare ipotesi. Da lì si ricavano:
+\begin{itemize}
+  \item $\pi$ = frazione di casi con $x \neq 0$;
+  \item $M_2$ = media di $x^2$ quando $x \neq 0$;
+  \item quindi $\pi \cdot M_2 = \mathbb{E}[x^2]$, il momento secondo totale.
+\end{itemize}
+
+La varianza prevista, supponendo che la media vera sia $\delta$, è:
+\[
+\mathrm{Var} = \mathbb{E}[x^2] - \delta^2
+\]
+(più una correzione per la correlazione tra ridondanze).
+
+\subsection{Lo STOP}
+
+Una variabile con media $\delta$ ha sempre $\mathbb{E}[x^2] \ge \delta^2$, perché
+\[
+\mathrm{Var} = \mathbb{E}[x^2] - (\text{media})^2 \ge 0.
+\]
+
+Se i dati mostrano $\mathbb{E}[x^2] < \delta^2$, vuol dire che \textbf{le $x$ osservate sono tipicamente più piccole di $\delta$}. Chiedere di rilevare una media pari a $\delta$ è incompatibile con la scala dei dati: la varianza verrebbe negativa, che è impossibile.
+
+Il protocollo prevedeva questo caso (regola a): \textbf{STOP, non calcolare $n$.}
+
+\textbf{Cosa è successo:}
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Budget} & $\mathrm{RMS}(x)/\delta$ & \textbf{Esito} \\
+\midrule
+tight  & 2,66 & ok \\
+medium & 1,27 & ok \\
+loose  & \textbf{0,36} & \textbf{STOP} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+$\mathrm{RMS}(x) = \sqrt{\mathbb{E}[x^2]}$ è la dimensione tipica di $x$. A budget loose, la differenza tipica tra i due metodi è circa un terzo del 3\% di OPT. Con budget quasi abbondante, entrambi i metodi mettono dentro quasi tutto ciò che conviene, quindi scelgono quasi le stesse cose.
+
+\begin{nota}
+L'audit forense ha verificato che \textbf{non è un bug}: la matematica e il codice concordano. È la regola che ha funzionato come doveva.
+\end{nota}
+
+%======================================================================
+\section{Perché non basta abbassare $\delta$}
+
+La tentazione ovvia: ``metto $\delta = 1\%$ e riparto''. Il problema è che lo decideresti \textbf{dopo aver visto che il 3\% non funziona}, cioè scegli la soglia in base ai dati. È proprio il tipo di scelta che la pre-registrazione vuole impedire. Un $\delta$ scelto così non dice più ``differenza importante'', dice ``differenza che riesco a rilevare''.
+
+Inoltre si è scoperto che il 3\% \textbf{non aveva una giustificazione vera}. Era stato preso per analogia da una frase descrittiva dello Step 4 (``$\approx$1\% trascurabile, 3,4\% il più piccolo chiamato reale''), su dati con una scala diversa.
+
+%======================================================================
+\section{Dove siamo adesso}
+
+\begin{itemize}
+  \item \textbf{v6.2} è bloccata e ferma su uno STOP valido. Non si tocca.
+  \item \textbf{v6.3} richiede prima una \textbf{decisione scientifica tua, non statistica}: \emph{quanto deve essere grande la differenza tra i due metodi perché conti davvero per chi usa il sistema?}
+  \item La checklist ti chiede di rispondere con una \textbf{giustificazione esterna}: letteratura, una convenzione del dominio, oppure una misura di conseguenze reali. Non con i numeri del pilota.
+  \item Tutto il resto (varianza, numero di seed, test) segue meccanicamente una volta fissata quella soglia.
+\end{itemize}
+
+\begin{nota}
+\textbf{Il cancello:} se non sai giustificare la soglia, l'esperimento confermativo non parte. Le strade legittime sono due:
+\begin{itemize}
+  \item[\textbf{A.}] Trovi una giustificazione esterna per la soglia.
+  \item[\textbf{B.}] Cambi domanda e misuri un effetto concreto a valle. Per esempio: le risposte dell'LLM migliorano con il contesto scelto da token-aware? In quel modo stabilisci prima cosa è ``importante''.
+\end{itemize}
+\end{nota}
+
+%======================================================================
+\section{In sintesi}
+
+Tutta la parte statistica serve a rispondere a una sola domanda: \textbf{``dividere il guadagno per i token migliora la selezione dei documenti, e quando?''}
+
+Cosa si vede già, senza test formali:
+\begin{itemize}
+  \item a budget stretto, i due metodi differiscono spesso e di più;
+  \item a budget largo, differiscono poco.
+\end{itemize}
+
+Cosa manca è sapere se quelle differenze \textbf{contano per l'uso reale}. Questa domanda non la può chiudere nessun test statistico: serve un criterio esterno ai dati.
+
+\end{document}

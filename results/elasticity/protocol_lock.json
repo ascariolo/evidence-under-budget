@@ -1,0 +1,434 @@
+{
+  "protocol_version": "6.0-preflight",
+  "status": "PREFLIGHT_FAIL_STOP",
+  "constants": {
+    "ARM": "elasticity_factorial",
+    "BETA_GT1_LEVEL": 2.0,
+    "BETA_GT1_MIN_FRACTION": 0.95,
+    "BETA_LEVELS": [
+      -0.5,
+      0.0,
+      0.5,
+      1.0,
+      1.5,
+      2.0
+    ],
+    "BETA_PER_RHO": 2.5,
+    "BETA_TOLERANCE": 0.15,
+    "BUDGET_LEVELS": {
+      "tight": 0.25,
+      "medium": 0.6,
+      "loose": 1.5
+    },
+    "CONFIRMATORY_FAMILY_SIZE": 10,
+    "CONFIRMATORY_SEEDS": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59
+    ],
+    "D_EXPECTED_RANGE": [
+      0.1,
+      0.3
+    ],
+    "ELASTICITY_PROTOCOL_VERSION": "6.0-preflight",
+    "EMBED_DIM": 64,
+    "ILP_RUNTIME_Q95_MAX_S": 5.0,
+    "ILP_TIME_LIMIT_S": 600.0,
+    "KS_MIN_P": 0.01,
+    "MAX_TOKEN_CV_REJECTION_RATE": 0.01,
+    "MAX_USABLE_COUNT_LEVEL_DIFF": 1.5,
+    "MIN_SELECTED_AT_TIGHT": 2,
+    "MIN_TOKEN_CV": 0.3,
+    "MIN_USABLE_DOCS": 4,
+    "MIN_WITHIN_LEVEL_SD_D": 0.02,
+    "MMR_LAMBDA": 0.5,
+    "MU_R": -2.995732273553991,
+    "MU_W": 4.343805421853684,
+    "N_DOCS": 25,
+    "N_TOPICS": 5,
+    "OBJECTIVE_LAMBDA": 0.1,
+    "PILOT_SEEDS": [
+      1000,
+      1001,
+      1002,
+      1003,
+      1004
+    ],
+    "PLANNED_N_SEEDS": 60,
+    "POLY_LINEAR": [
+      -5,
+      -3,
+      -1,
+      1,
+      3,
+      5
+    ],
+    "POLY_QUADRATIC": [
+      5,
+      -1,
+      -4,
+      -4,
+      -1,
+      5
+    ],
+    "QUANTILES": [
+      0.05,
+      0.25,
+      0.5,
+      0.75,
+      0.95
+    ],
+    "QUANTILE_TOL_FRACTION_OF_SIGMA": 0.25,
+    "REDUNDANCY_LEVELS": {
+      "low": 0.15,
+      "high": 0.7
+    },
+    "RHO_BUDGET_TOLERANCE": 0.02,
+    "RHO_C": {
+      "-0.5": -0.2,
+      "0.0": 0.0,
+      "0.5": 0.2,
+      "1.0": 0.4,
+      "1.5": 0.6,
+      "2.0": 0.8
+    },
+    "R_CLIP": [
+      0.001,
+      0.95
+    ],
+    "SIGMA_R": 1.25,
+    "SIGMA_W": 0.5,
+    "TOKEN_CLIP": [
+      8,
+      400
+    ],
+    "TOST_ALPHA": 0.05,
+    "TOST_MARGIN_DECIMALS": 2,
+    "TOST_MARGIN_FALLBACK": 0.03,
+    "TOST_MARGIN_UNSTABLE_IQR_MULTIPLE": 2.0,
+    "TOST_TARGET_POWER": 0.8,
+    "UPSTREAM_SHA256_PREFIX": {
+      "optimizer.py": "facfb186ddcc",
+      "benchmark.py": "5ce79b512ae3",
+      "experiments/controlled/generator.py": "d7ccf7907794",
+      "experiments/controlled/protocol.py": "566481725b48"
+    },
+    "USABLE_RELEVANCE_THRESHOLD": 0.05
+  },
+  "invariants": [
+    {
+      "id": "Z1",
+      "src": "6B",
+      "check": "upstream module hashes equal UPSTREAM_SHA256_PREFIX"
+    },
+    {
+      "id": "Z2",
+      "src": "6B",
+      "check": "results/controlled/* byte-identical before and after preflight"
+    },
+    {
+      "id": "A1",
+      "src": "D",
+      "check": "beta levels == {-0.5,0,0.5,1,1.5,2} and rho_c == beta/2.5"
+    },
+    {
+      "id": "A2",
+      "src": "H1",
+      "check": "per-level mean beta_hat within 0.15 of target (planned ensemble)"
+    },
+    {
+      "id": "A3",
+      "src": "H2",
+      "check": ">=95% of instances at beta=2.0 have beta_hat > 1"
+    },
+    {
+      "id": "B1",
+      "src": "H3",
+      "check": "pairwise KS p > 0.01 for r across all 15 beta pairs"
+    },
+    {
+      "id": "B2",
+      "src": "H4",
+      "check": "pairwise KS p > 0.01 for w across all 15 beta pairs"
+    },
+    {
+      "id": "B3",
+      "src": "IMPL-8",
+      "check": "quantiles of log r / log w differ by <= 0.25*sigma between any two levels"
+    },
+    {
+      "id": "C1",
+      "src": "H5",
+      "check": "token-CV threshold == 0.30 exactly"
+    },
+    {
+      "id": "C2",
+      "src": "H5",
+      "check": "token-CV rejection rate <= 1%"
+    },
+    {
+      "id": "C3",
+      "src": "H5",
+      "check": "rejections exactly balanced across beta levels"
+    },
+    {
+      "id": "C4",
+      "src": "H5",
+      "check": "rejected instances never resampled; rejected seeds absent from every cell"
+    },
+    {
+      "id": "D1",
+      "src": "H9",
+      "check": "every instance has >= 4 docs with r > 0.05"
+    },
+    {
+      "id": "D2",
+      "src": "IMPL-8",
+      "check": "mean usable-doc count differs by <= 1.5 between any two beta levels"
+    },
+    {
+      "id": "E1",
+      "src": "C1",
+      "check": "D = 1 - tau_b(r, r/w) finite and in [0, 2]"
+    },
+    {
+      "id": "E2",
+      "src": "H10",
+      "check": "within-level sd(D) > 0.02 at every beta level"
+    },
+    {
+      "id": "E3",
+      "src": "6B-I",
+      "check": "D recomputes bit-identically"
+    },
+    {
+      "id": "F1",
+      "src": "D",
+      "check": "gamma levels == {low: 0.15, high: 0.70}"
+    },
+    {
+      "id": "F2",
+      "src": "H6",
+      "check": "changing gamma leaves r, w, beta_hat, D, topics bit-identical"
+    },
+    {
+      "id": "F3",
+      "src": "H6",
+      "check": "mean similarity strictly higher at high gamma in every paired instance"
+    },
+    {
+      "id": "G1",
+      "src": "H7",
+      "check": "W_sat from a proven-optimal unconstrained ILP for every instance"
+    },
+    {
+      "id": "G2",
+      "src": "H7",
+      "check": "tight < medium < loose and realized rho within 0.02, every instance"
+    },
+    {
+      "id": "G3",
+      "src": "6B-G",
+      "check": "tight budget >= cheapest document, every instance"
+    },
+    {
+      "id": "G4",
+      "src": "H9",
+      "check": "both greedy methods select >= 2 docs at tight (pilot)"
+    },
+    {
+      "id": "G5",
+      "src": "6B-G",
+      "check": "no budget level at which all four heuristics coincide on every instance (pilot)"
+    },
+    {
+      "id": "H1",
+      "src": "H8",
+      "check": "100% of pilot ILPs proven globally optimal"
+    },
+    {
+      "id": "H2",
+      "src": "H8",
+      "check": "pilot ILP runtime q95 < 5 s"
+    },
+    {
+      "id": "H3",
+      "src": "6B-H",
+      "check": "no heuristic ever flagged proven optimal"
+    },
+    {
+      "id": "H4",
+      "src": "6B-H",
+      "check": "solver objective == recomputed; gaps >= -1e-6; Delta_gap identity exact"
+    },
+    {
+      "id": "I1",
+      "src": "6B-I",
+      "check": "full pipeline repeat identical: corpus, r, similarity, budgets, objectives, selections, ILP"
+    },
+    {
+      "id": "J1",
+      "src": "E",
+      "check": "confirmatory family has exactly 10 tests T1-T10 in family F1"
+    },
+    {
+      "id": "J2",
+      "src": "E",
+      "check": "no pairwise beta comparison: every test uses 1 level or all 6"
+    },
+    {
+      "id": "J3",
+      "src": "E",
+      "check": "only arm == elasticity_factorial and the two greedy methods enter"
+    },
+    {
+      "id": "J4",
+      "src": "E/IMPL-2",
+      "check": "redundancy pooled as the mean of both levels per (seed, beta)"
+    },
+    {
+      "id": "J5",
+      "src": "E",
+      "check": "each test draws exactly its declared budget and beta subset"
+    },
+    {
+      "id": "K1",
+      "src": "F",
+      "check": "margin formula deterministic; margin file written once, never overwritten"
+    },
+    {
+      "id": "K2",
+      "src": "F",
+      "check": "m > 0"
+    },
+    {
+      "id": "K3",
+      "src": "F",
+      "check": "if planned-n TOST power < 0.80 the decision is PENDING, never silently continued"
+    }
+  ],
+  "implementation_decisions": [
+    {
+      "id": "IMPL-1",
+      "ambiguity": "A4 names two latents (zeta, eta) with corr rho_c but not which is held fixed.",
+      "decision": "eta (tokens) is the OWN latent: eta = z1, zeta = rho_c*z1 + sqrt(1-rho_c^2)*z0.",
+      "basis": "B2 states 'w is drawn from its own latent, independent of rho_c'. Taken literally, w is then bit-identical across all beta and gamma levels for a seed, so a token-CV rejection removes the whole seed and every Friedman block stays complete.",
+      "status": "needs sign-off"
+    },
+    {
+      "id": "IMPL-2",
+      "ambiguity": "E says 'unit = base instance' and 'pooled over redundancy; paired by seed'.",
+      "decision": "Analysis value per (seed, beta, budget) = mean over the two redundancy levels. n = 60 independent seeds per test.",
+      "basis": "The design's power analysis (G) uses n = 60. The two redundancy levels of a seed share r, w and topics (IMPL-1), so treating them as independent blocks would pseudo-replicate.",
+      "status": "needs sign-off"
+    },
+    {
+      "id": "IMPL-3",
+      "ambiguity": "E gives no test statistic for T5-T8 and T10.",
+      "decision": "T6/T7/T10: one-sample two-sided Wilcoxon on per-seed orthogonal-polynomial contrast scores. T5: TOST as two one-sided Wilcoxon tests, p = max. T8: one-sided Wald z from mixedlm(mean|Delta_gap| ~ C(beta) + D_centred, groups=seed). T1/T9: Friedman.",
+      "basis": "Keeps the family non-parametric, consistent with T2-T4.",
+      "status": "needs sign-off"
+    },
+    {
+      "id": "IMPL-4",
+      "ambiguity": "H lists the beta, marginal, CV, usable-doc, D and redundancy checks under a 5-seed pilot.",
+      "decision": "Those generator-only checks run on the planned confirmatory ensemble (seeds 0-59). Pilot 5-seed beta means are reported descriptively only.",
+      "basis": "Step 3C.1 locked beta as a population-level parameter over the planned ensemble. Pre-measurement arithmetic: sd(beta_hat) <= 0.57, so SE over 5 seeds ~ 0.25 > 0.15 tolerance - a 5-seed check would test estimator noise, not the generator.",
+      "status": "needs sign-off"
+    },
+    {
+      "id": "IMPL-5",
+      "ambiguity": "H does not say which seeds the pilot uses.",
+      "decision": "Pilot seeds 1000-1004, disjoint from confirmatory seeds 0-59. No compared-method selection is computed on confirmatory seeds during preflight (outcome-blind): only generator properties and the unconstrained saturation ILP.",
+      "basis": "m must not be estimated from data that later enter T5.",
+      "status": "needs sign-off"
+    },
+    {
+      "id": "IMPL-6",
+      "ambiguity": "F does not fix the pooling or the order of stability check and rounding.",
+      "decision": "m uses instance-level greedy_token_aware absolute gaps at tight over ALL pilot instances (all beta, both gamma). Stability check on the UNROUNDED median and IQR; then round to 2 decimals.",
+      "basis": "'at the tight budget' carries no beta restriction; checking stability before rounding avoids rounding hiding instability.",
+      "status": "needs sign-off"
+    },
+    {
+      "id": "IMPL-7",
+      "ambiguity": "F says 'the pilot's sd' without naming the quantity.",
+      "decision": "sd of the seed-level Delta_gap at tight, beta = 2.0 - the T5 analysis unit. Power by the design's normal approximation: 2*Phi(m*sqrt(n)/sd - z_0.95) - 1.",
+      "basis": "Power must refer to the unit T5 actually tests.",
+      "status": "needs sign-off"
+    },
+    {
+      "id": "IMPL-8",
+      "ambiguity": "The design gives only KS for marginal invariance and no tolerance for usable-doc balance.",
+      "decision": "Added B3 (quantile tolerance 0.25*sigma) and D2 (usable-count level difference <= 1.5), declared here before measuring.",
+      "basis": "6B requires distributional summaries beyond KS and a check for systematic differences.",
+      "status": "needs sign-off"
+    }
+  ],
+  "upstream_sha256_prefix": {
+    "optimizer.py": "facfb186ddcc",
+    "benchmark.py": "5ce79b512ae3",
+    "experiments/controlled/generator.py": "d7ccf7907794",
+    "experiments/controlled/protocol.py": "566481725b48"
+  },
+  "tost_margin": 0.03,
+  "tost_decision": "PENDING_USER_DECISION",
+  "rejected_confirmatory_seeds": []
+}

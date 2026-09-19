@@ -1,0 +1,64 @@
+{
+  "stage": "6.2 pre-pilot numerical stage + blinded variance pilot + seed count",
+  "written_before_execution_utc": "2026-09-16T15:20:23Z",
+  "protocol": {
+    "version": "6.2-locked",
+    "protocol_py_sha256": "0fe3412c890697bddcb8009620387fbd58d3d8c433e4fbd72e2dbd02fee6c22e",
+    "seed_count_py_sha256": "2bbc392f6b4ec4d6d1c0e9c37a3b3c4062e43ed9a9d6bab5af704b605a01e8cd",
+    "generator_py_sha256": "351949f310ba73e4f5e9d07b97abd7788cc65347ab614149600f723f7f1b5019",
+    "optimizer_py_sha256": "facfb186ddccc831786a25463177755db6e06ad801d4a01d4140df9441c97b07"
+  },
+  "locked_audit": {
+    "file": "results/elasticity/amendment_6_2_locked_audit.json",
+    "sha256": "bd8d7e13a246ea49847ebb579ef634af587eb0fc51d47c3a4e4a624d64233df2"
+  },
+  "reused_6B_artifacts": [
+    {
+      "artifact": "results/elasticity/preflight_saturation.csv",
+      "sha256": "125dcdb901e2a59b1986df49a386fb26ba0101ddcb6d1eb0f24b0de28d3da304",
+      "quantities": "W_sat (proven unconstrained ILP) and budget_{tight,medium,loose} for the 720 instances of seeds 0-59",
+      "verification_before_use": [
+        "all 720 w_sat_proven == True",
+        "regenerated instance token sum == corpus_token_mass (instance identity)",
+        "build_budgets(w_sat) == recorded budgets",
+        "generator/optimizer/protocol constants hash-identical to 6B"
+      ],
+      "on_mismatch": "STOP"
+    },
+    {
+      "artifact": "results/elasticity/preflight_generator_instances.csv",
+      "sha256": "6feb40db824c7257e8e2c5032d30256231a61138351304594b2c33d4ca28e19c",
+      "quantities": "per-instance D - used ONLY as a bit-equality cross-check; D is recomputed from the generator",
+      "on_mismatch": "STOP"
+    }
+  ],
+  "not_reusable": {
+    "what": "budget-level ILP optimum at W_max = build_budgets(rho_b * W_sat)",
+    "reason": "no 6B artifact contains budget-level ILP optima for seeds 0-59 (6B ran only the unconstrained saturation ILP on confirmatory seeds)"
+  },
+  "newly_computed": [
+    "stage 1: 2160 budget-level reference ILPs (720 baseline instances x 3 budgets), reference solver only -> OPT_b, delta_b",
+    "stage 2: Delta_D (explicit type-7 percentiles, N=60) and E_Q, generator-only on B = seeds 0-59",
+    "stage 3: freeze OPT_b, delta_b, Delta_D, E_Q (write-once, hashed)",
+    "stage 4: blinded variance pilot on seeds 2000-2039: token-CV dispositions; saturation ILP + greedy_objective + greedy_token_aware only; rule H; pilot quantities pi_b, M2_b, rho_red_b, rho_lvl_b, sigma_S",
+    "stage 5: substitute into frozen n_final; n_t, n_final, <=300 rule"
+  ],
+  "not_computed": [
+    "no heuristic of any kind on seeds 0-59",
+    "no Delta_gap on seeds 0-59",
+    "no top_k or mmr anywhere",
+    "no confirmatory test statistic or p-value",
+    "no per-beta mean or sign of any pilot quantity is reported"
+  ],
+  "blinding": "pilot raw per-instance values are written to a SEALED file (hash recorded) for auditability only and are not summarised, printed or inspected; only the five whitelisted pilot quantities and QC are reported",
+  "pilot_seed_range": [
+    2000,
+    2039
+  ],
+  "baseline_population": [
+    0,
+    59
+  ],
+  "no_confirmatory_experiment": "EXPLICIT: the confirmatory experiment will NOT run. Seeds 0..n_final-1 will NOT be run as a comparison experiment. Execution stops after n_final is reported.",
+  "stop_rules": "any SeedCountStop, any unproven required ILP, any reuse-verification mismatch -> STOP and report"
+}

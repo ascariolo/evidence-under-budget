@@ -1,0 +1,100 @@
+==============================================================================
+STEP 4 - CONTROLLED FULL EXPERIMENT: FIRST-PASS ANALYSIS
+==============================================================================
+QUALITY CONTROL: PASS
+  n_rows_total: 5400
+  n_rows_synthetic: 4800
+  n_rows_arm_E: 600
+  n_ilp_solves: 1080
+  n_ilp_proven_optimal: 1080
+  ilp_proven_rate: 1.0
+  n_heuristics_claiming_optimal: 0
+  n_missing_objective: 0
+  protocol lock matches execution: True
+
+frame: 1080 instance-budget rows (A/B/C 720, D 240, arm E 120)
+primary estimand: Delta_gap = gap(greedy_objective) - gap(greedy_token_aware) = score(greedy_token_aware) - score(greedy_objective); gap measured in ABSOLUTE objective units
+
+------------------------------------------------------------------------------
+PRIMARY: Delta_gap by budget (A/B/C pooled; D and E excluded)
+------------------------------------------------------------------------------
+  budget      n      mean    median       sd       W/L/T     d_z    r_rb  wilcoxon p                95% CI
+  tight     240   +0.3016   +0.2310   0.2829 205/ 19/ 16  +1.066  +0.957    1.07e-35   [+0.2673, +0.3393]
+  medium    240   +0.1018   +0.0725   0.1169 195/ 38/  7  +0.871  +0.859    5.50e-30   [+0.0875, +0.1176]
+  loose     240   -0.0309   -0.0167   0.0433   8/166/ 66  -0.714  -0.975    6.02e-31   [-0.0372, -0.0259]
+
+PRIMARY: Delta_gap by beta condition x budget (A/B/C)
+  cond   beta_tbudget      n      mean     d_z       W/L/T  wilcoxon p                95% CI
+  A       +0.00tight      80   +0.3134  +1.045  68/  8/  4    4.23e-13   [+0.2521, +0.3823]
+  A       +0.00medium     80   +0.1039  +1.082  70/  9/  1    1.38e-12   [+0.0835, +0.1257]
+  A       +0.00loose      80   -0.0294  -0.822   3/ 58/ 19    1.03e-11   [-0.0378, -0.0223]
+  B       +0.50tight      80   +0.4080  +1.428  76/  3/  1    1.68e-14   [+0.3465, +0.4711]
+  B       +0.50medium     80   +0.1418  +0.983  68/ 11/  1    5.18e-12   [+0.1120, +0.1757]
+  B       +0.50loose      80   -0.0484  -0.839   2/ 66/ 12    2.40e-13   [-0.0630, -0.0375]
+  C       -0.50tight      80   +0.1835  +0.866  61/  8/ 11    7.97e-11   [+0.1405, +0.2322]
+  C       -0.50medium     80   +0.0597  +0.671  57/ 18/  5    5.00e-08   [+0.0424, +0.0813]
+  C       -0.50loose      80   -0.0150  -0.667   3/ 42/ 35    1.46e-08   [-0.0207, -0.0107]
+
+PRIMARY: Delta_gap by redundancy x budget (A/B/C)
+  redundancy=low   tight   n=120 mean=+0.3424 d_z=+1.181 W/L/T=113/5/2 p=2.55e-20
+  redundancy=low   medium  n=120 mean=+0.1115 d_z=+0.963 W/L/T=98/16/6 p=2.02e-17
+  redundancy=low   loose   n=120 mean=-0.0147 d_z=-0.524 W/L/T=3/63/54 p=6.15e-12
+  redundancy=high  tight   n=120 mean=+0.2608 d_z=+0.963 W/L/T=92/14/14 p=9.26e-17
+  redundancy=high  medium  n=120 mean=+0.0921 d_z=+0.782 W/L/T=97/22/1 p=5.13e-14
+  redundancy=high  loose   n=120 mean=-0.0472 d_z=-0.953 W/L/T=5/103/12 p=9.76e-20
+
+multiplicity over 12 confirmatory cells: Holm-significant at 0.05: 12; BH-significant: 12
+
+------------------------------------------------------------------------------
+MIXED MODELS (pre-registered)
+------------------------------------------------------------------------------
+  factorial_model: delta_gap ~ budget * rl_condition * redundancy + (1|seed)  (n=720)
+     Intercept                                                   +0.2709  p=2.36e-24  [+0.2188,+0.3230] **
+     C(budget_level, Treatment('tight'))[T.loose]                -0.3155  p=1.58e-21  [-0.3803,-0.2506] **
+     C(budget_level, Treatment('tight'))[T.medium]               -0.1634  p=7.97e-07  [-0.2283,-0.0985] **
+     C(rl_condition)[T.B]                                        +0.0780  p=1.84e-02  [+0.0132,+0.1429] *
+     C(rl_condition)[T.C]                                        -0.1082  p=1.08e-03  [-0.1731,-0.0434] *
+     C(redundancy_level)[T.low]                                  +0.0850  p=1.03e-02  [+0.0201,+0.1499] *
+     C(budget_level, Treatment('tight'))[T.loose]:C(rl_condition)[T.B]  -0.1068  p=2.26e-02  [-0.1985,-0.0150] *
+     C(budget_level, Treatment('tight'))[T.medium]:C(rl_condition)[T.B]  -0.0768  p=1.01e-01  [-0.1686,+0.0150]
+     C(budget_level, Treatment('tight'))[T.loose]:C(rl_condition)[T.C]  +0.1291  p=5.81e-03  [+0.0374,+0.2209] *
+     C(budget_level, Treatment('tight'))[T.medium]:C(rl_condition)[T.C]  +0.0608  p=1.94e-01  [-0.0310,+0.1525]
+     C(budget_level, Treatment('tight'))[T.loose]:C(redundancy_level)[T.low]  -0.0546  p=2.44e-01  [-0.1464,+0.0372]
+     C(budget_level, Treatment('tight'))[T.medium]:C(redundancy_level)[T.low]  -0.0922  p=4.88e-02  [-0.1840,-0.0005] *
+     C(rl_condition)[T.B]:C(redundancy_level)[T.low]             +0.0331  p=4.80e-01  [-0.0587,+0.1248]
+     C(rl_condition)[T.C]:C(redundancy_level)[T.low]             -0.0434  p=3.54e-01  [-0.1351,+0.0484]
+     C(budget_level, Treatment('tight'))[T.loose]:C(rl_condition)[T.B]:C(redundancy_level)[T.low]  -0.0136  p=8.37e-01  [-0.1434,+0.1161]
+     C(budget_level, Treatment('tight'))[T.medium]:C(rl_condition)[T.B]:C(redundancy_level)[T.low]  +0.0403  p=5.43e-01  [-0.0895,+0.1701]
+     C(budget_level, Treatment('tight'))[T.loose]:C(rl_condition)[T.C]:C(redundancy_level)[T.low]  +0.0303  p=6.47e-01  [-0.0995,+0.1601]
+     C(budget_level, Treatment('tight'))[T.medium]:C(rl_condition)[T.C]:C(redundancy_level)[T.low]  +0.0499  p=4.51e-01  [-0.0799,+0.1796]
+  continuous_model: delta_gap ~ log(rho) * beta_hat + mean_similarity + (1|seed)  (n=720)
+     Intercept                                                   +0.0976  p=1.32e-05  [+0.0537,+0.1415] **
+     log_rho                                                     -0.1894  p=2.61e-141 [-0.2041,-0.1747] **
+     beta_hat                                                    +0.0104  p=5.57e-01  [-0.0243,+0.0452]
+     log_rho:beta_hat                                            -0.1839  p=3.18e-21  [-0.2220,-0.1458] **
+     instance_similarity_mean                                    -0.4757  p=1.96e-04  [-0.7259,-0.2254] **
+
+------------------------------------------------------------------------------
+MECHANISM DIAGNOSTICS (descriptive, not mediation)
+------------------------------------------------------------------------------
+  tight: d n_selected=+2.10 d tokens=-3.5 d relevance=+0.434 d red/pair=-0.1917 d sel.len=-32.5
+       corr(Delta_gap, d n_selected)=+0.867  corr(.., d relevance)=+0.982
+  medium: d n_selected=+2.13 d tokens=-8.2 d relevance=+0.391 d red/pair=-0.0391 d sel.len=-17.3
+       corr(Delta_gap, d n_selected)=+0.770  corr(.., d relevance)=+0.826
+  loose: d n_selected=+0.42 d tokens=-24.0 d relevance=+0.075 d red/pair=-0.0015 d sel.len=-4.1
+       corr(Delta_gap, d n_selected)=-0.343  corr(.., d relevance)=-0.101
+
+------------------------------------------------------------------------------
+CONDITION D (adversarial; analysed separately)
+------------------------------------------------------------------------------
+  tight   n= 80 mean=+0.9975 d_z=+2.060 W/L/T=80/0/0 p=7.85e-15 CI=[+0.8926,+1.1054]
+  medium  n= 80 mean=+0.6491 d_z=+1.675 W/L/T=79/1/0 p=1.06e-14 CI=[+0.5655,+0.7369]
+  loose   n= 80 mean=-0.0868 d_z=-1.127 W/L/T=0/74/6 p=1.96e-14 CI=[-0.1049,-0.0710]
+
+------------------------------------------------------------------------------
+ARM E (realism anchor; separate, not external validity)
+------------------------------------------------------------------------------
+  tight   n= 40 mean=+0.3876 d_z=+1.449 W/L/T=37/2/1 p=1.67e-07 CI=[+0.3074,+0.4716]
+  medium  n= 40 mean=+0.1309 d_z=+0.470 W/L/T=24/13/3 p=9.67e-03 CI=[+0.0645,+0.2484]
+  loose   n= 40 mean=-0.0432 d_z=-1.142 W/L/T=5/34/1 p=2.81e-07 CI=[-0.0562,-0.0329]
+  beta_hat (positive subset): mean=+0.0759 sd=0.0861; non-positive relevance values dropped: 8

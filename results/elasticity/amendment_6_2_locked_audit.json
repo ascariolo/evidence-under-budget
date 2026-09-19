@@ -1,0 +1,722 @@
+{
+  "generated_at_utc": "2026-09-16T15:06:09Z",
+  "protocol": {
+    "version": "6.2-locked",
+    "previous": "6.2-lock-candidate",
+    "protocol_py_sha256": "0fe3412c890697bddcb8009620387fbd58d3d8c433e4fbd72e2dbd02fee6c22e",
+    "analysis_py_sha256": "1f0bb2f5e68dadb79acfd241c852fcc461d3c9bf9cbc97d481c1e70711066b8f",
+    "amendment_6_1": {
+      "version": "6.1-amended",
+      "source": "docs/elasticity_design_repair.md sec. 8 + owner decisions 1-12",
+      "decisions": {
+        "1_tight_budget": "rho = 0.25 unchanged",
+        "2_budget_formulation": "W_max = rho * W_sat unchanged",
+        "3_G4": "descriptive diagnostic only; no longer a locked guard",
+        "4_G4_prime": "locked guard: the two cheapest documents fit within W_max at every budget",
+        "5_TOST": "T5, K1-K3 and results/elasticity/tost_margin.json RETIRED; artifact preserved",
+        "6_family": "9 tests T1-T4, T6-T10; Holm over 9",
+        "7_test_statistic": "sign-flip permutation test on seed-level mean Delta_gap, zeros retained",
+        "8_T8": "divergence probability on centred D, mixed model, one-sided > 0",
+        "9_exploratory": "one-document optima by beta; divergence/effect decomposition; rho = 0.30",
+        "10_SESOI": "3% of the mean ILP optimum",
+        "11_seed_cap": "required n > 300 -> STOP, redesign",
+        "12_frozen": "all other factors unchanged"
+      }
+    },
+    "declarations_6_1": {
+      "permutation_rng_seed_61000": "CONFIRMED",
+      "G4_prime_failure_stops_design": "CONFIRMED",
+      "divergence_is_set_inequality": "CONFIRMED",
+      "T8_linear_mixed_model_carryover": "NOT CONFIRMED -> re-specified in T8_SPEC below"
+    },
+    "t8_spec": {
+      "outcome": "Y_{s,beta,gamma} in {0,1}: 1 iff greedy_objective and greedy_token_aware select different document SETS, at the tight budget; instance level (both redundancy levels)",
+      "predictor": "Dc_{s,beta} = D_{s,beta} - mean_s D_{s,beta}  (centred within beta level)",
+      "estimand": "b = within-level slope of P(Y=1) on D, in PROBABILITY POINTS per unit D (identity link, level fixed effects)",
+      "estimator": "b_hat = sum_s S_s / sum_{s,beta,gamma} Dc^2, where S_s = sum_{beta,gamma} Dc_{s,beta} * (Y_{s,beta,gamma} - Ybar_beta)",
+      "test": "one-sided seed-cluster sign-flip test on the per-seed scores S_s: p = (1 + #{mean(sign*S) >= mean(S)}) / (10000 + 1), RNG seed 61000",
+      "H0": "b = 0",
+      "H1": "b > 0",
+      "why_identity_link": "The SESOI is declared on the absolute probability scale (U-SC2). A logistic model estimates a log-odds slope; converting it to probability points depends on the fitted outcome probabilities, i.e. on the data. The identity-link estimand is on the SESOI scale by construction.",
+      "why_cluster_signflip": "No Gaussian random-effect assumption for a bounded binary outcome; seeds are the independent unit; consistent with the family's sign-flip machinery.",
+      "rejected": [
+        "Gaussian linear mixed model on the seed-level share (6.1; not confirmed)",
+        "logistic GLMM (estimand not on the SESOI scale)"
+      ]
+    },
+    "seed_count_rule": {
+      "version": "6.2-locked",
+      "regime": "R2",
+      "status": "LOCKED",
+      "locked_on_basis_of": {
+        "audit": "results/elasticity/amendment_6_2_lock_candidate_audit.json",
+        "sha256": "c62b9ac5b50c1077e2fd70559795d7c6271eb21852df1d0fd18f4061a9500b75",
+        "result": "all owner checks 1-15 true; protocol_lockable true; no unresolved item"
+      },
+      "role_of_pilot": "PARAMETER ESTIMATION ONLY",
+      "before_pilot": "The complete deterministic function F: (pilot quantities) -> n_final is frozen, together with every FIXED quantity it uses (delta_b via OPT_b on B, Delta_D and E_Q on B), the SESOI, the tests, the effect-size mappings, the power target, alpha/Holm, the formulas, the minimum-60 rule and all edge-case rules.",
+      "after_pilot": "Observed pilot quantities are substituted into the already-frozen F. The pilot cannot determine or modify any of the items listed under before_pilot.",
+      "populations": {
+        "P": "P = the ACCEPTED seeds among 2000-2039 under the locked token-CV acceptance policy; rejected seeds are excluded from P and reported",
+        "B": "fixed baseline population, confirmatory seeds 0-59 (all 60 accepted in 6B); independent of n"
+      },
+      "constants": {
+        "k": 6,
+        "alpha": "0.05/9",
+        "power": 0.8,
+        "nonzero_tol": 1e-12,
+        "rho_tol": 1e-10,
+        "n_search": "integers 1..300",
+        "N_min": 60,
+        "N_max": 300,
+        "ARE": "0.955*k/(k+1)",
+        "T8_probability_sesoi": 0.03
+      },
+      "fixed_quantities_from_B": {
+        "OPT_b": "mean of the PROVEN ILP optimum at budget b over s in B, 6 beta, 2 gamma (720 instances), W_max = build_budgets(rho_b * W_sat); reference solver only; any unproven solve -> STOP",
+        "delta_b": "0.03 * OPT_b",
+        "Delta_D": "mean over the 6 beta levels j of [q90_j - q10_j], q = quantile of D_{s,j} over s in B (one D per (s, beta); D is independent of gamma and budget). Generator-only, outcome-blind. Chosen BEFORE the pilot; no alternative D contrast may be searched after the pilot. Percentile convention: PERCENTILE_CONVENTION (locked).",
+        "E_Q": "mean over s in B of Q_s, Q_s = sum_j sum_gamma Dc_{s,j}^2, Dc centred within beta level over B"
+      },
+      "pilot_quantities_from_P": {
+        "pi_b": "share of instances (s in P, beta, gamma) with |x| > 1e-12 at budget b",
+        "M2_b": "mean of x^2 over instances with |x| > 1e-12 at budget b (none -> STOP)",
+        "rho_red_b": "Pearson over pairs (x_{s,j,low,b}, x_{s,j,high,b}), s in P, all j (not finite -> STOP)",
+        "rho_lvl_b": "mean of the 15 pairwise Pearson correlations between beta columns of the seed-level redundancy-mean x at budget b over s in P (any not finite -> STOP)",
+        "sigma_S": "sample SD (ddof=1) over s in P of T8 scores S_s at tight, Dc and Y centred within beta level over P"
+      },
+      "formulas": {
+        "sigma2_b": "(pi_b*M2_b - delta_b^2) * (1 + rho_red_b) / 2",
+        "T2_T3_T4": "n = max(1, ceil((z2 * sqrt(sigma2_tight) / delta_tight)^2)),  z2 = z_{1-alpha/2} + z_{0.80}",
+        "T6_T7_T10": "L = delta_b * sum c^2 / (max c - min c); sd = sqrt(sigma2_b * sum c^2 * (1 - rho_lvl_b)); n = max(1, ceil((z2 * sd / L)^2)); b = tight for T6,T7 and medium for T10",
+        "T1_T9_friedman": "f = (delta_b / sqrt(sigma2_b)) * sqrt(1/(2k)); lambda(n) = ARE*n*k*f^2/(1 - rho_lvl_b); power(n) = P[ncchi2(k-1, lambda(n)) > chi2_{1-alpha; k-1}]; n = min{n in 1..300 : power(n) >= 0.80}; W_min = ARE*k*f^2/((k-1)(1 - rho_lvl_b)); b = tight for T1 and loose for T9",
+        "T8": "b_min = 0.03 / Delta_D  (0.03 is a PROBABILITY-POINT DIFFERENCE across the Delta_D contrast, NOT a slope of 0.03); n = max(1, ceil((z1 * sigma_S / (b_min * E_Q))^2)), z1 = z_{1-alpha} + z_{0.80}",
+        "n_final": "max(60, max over the 9 tests of n_t); any n_t > 300 -> STOP, redesign"
+      },
+      "edge_case_rules": {
+        "a": "pi_b*M2_b - delta_b^2 <= 0 -> STOP (degenerate). The -delta^2 term is never dropped.",
+        "b": "any required Pearson correlation not finite (zero-variance vector) -> STOP. No substitution.",
+        "c": "rho_lvl must satisfy -1/(k-1) <= rho_lvl < 1 within tolerance 1e-10 at the boundaries; materially outside -> STOP; no clamping; no n_t = 1 shortcut. A value within tolerance of or above 1 makes 1 - rho_lvl <= 0, which is invalid -> STOP under GENERAL_EDGE_INVARIANT.",
+        "d": "search n over 1..300; power < 0.80 at 300 -> STOP, redesign; n_final = max(60, max_t n_t).",
+        "e": "nonzero means |x| > 1e-12.",
+        "f": "sigma_S is the sample SD with ddof = 1.",
+        "g": "all centring is within beta level; sigma_S over P; E_Q over B.",
+        "h": "RULE_H (locked): The pilot population is insufficient only when a required statistic is undefined or fails an explicitly declared mathematical/data-quality condition. Token-CV rejections are applied using the existing locked acceptance policy; rejected seeds are excluded from P and reported. A rejection does not by itself stop the pilot. The calculation stops only if, after applying the acceptance policy, any required statistic cannot be computed or its declared mathematical/data-quality requirements are not satisfied. Declared conditions: RULE_H_CONDITIONS.",
+        "i": "any unproven reference ILP while constructing OPT_b -> STOP; never substituted.",
+        "general": "sigma2_b <= 0, sigma_S <= 0, Delta_D <= 0, E_Q <= 0, OPT_b <= 0, or any non-finite quantity -> STOP under GENERAL_EDGE_INVARIANT."
+      },
+      "resolved_in_r2": {
+        "U-SC0": "R2",
+        "U-SC1": "frozen Friedman formula",
+        "U-SC2a": "Delta_D on B, 10-90 range",
+        "U-SC5a": "option (i): OPT_b over B = seeds 0-59, independent of n",
+        "circularity": "n does not determine the population used to define delta"
+      },
+      "resolved_in_lock_candidate": {
+        "U-SC2a-Q": "PERCENTILE_CONVENTION",
+        "U-SC-H": "RULE_H, option (i)"
+      },
+      "unresolved": []
+    },
+    "invariant_status": {
+      "Z1": "locked",
+      "Z2": "locked",
+      "A1": "locked",
+      "A2": "locked",
+      "A3": "locked",
+      "B1": "locked",
+      "B2": "locked",
+      "B3": "locked",
+      "C1": "locked",
+      "C2": "locked",
+      "C3": "locked",
+      "C4": "locked",
+      "D1": "locked",
+      "D2": "locked",
+      "E1": "locked",
+      "E2": "locked",
+      "E3": "locked",
+      "F1": "locked",
+      "F2": "locked",
+      "F3": "locked",
+      "G1": "locked",
+      "G2": "locked",
+      "G3": "locked",
+      "G4": "descriptive",
+      "G5": "locked",
+      "H1": "locked",
+      "H2": "locked",
+      "H3": "locked",
+      "H4": "locked",
+      "I1": "locked",
+      "J1": "locked",
+      "J2": "locked",
+      "J3": "locked",
+      "J4": "locked",
+      "J5": "locked",
+      "K1": "retired",
+      "K2": "retired",
+      "K3": "retired",
+      "G4P": "locked",
+      "L1": "locked",
+      "M1": "locked"
+    }
+  },
+  "frozen_factors": {
+    "changed": [
+      "CONFIRMATORY_FAMILY_SIZE",
+      "ELASTICITY_PROTOCOL_VERSION"
+    ],
+    "removed": [
+      "PLANNED_N_SEEDS",
+      "TOST_ALPHA",
+      "TOST_MARGIN_DECIMALS",
+      "TOST_MARGIN_FALLBACK",
+      "TOST_MARGIN_UNSTABLE_IQR_MULTIPLE",
+      "TOST_TARGET_POWER"
+    ],
+    "added": [
+      "AMENDMENT_6_1",
+      "DECLARATIONS_6_1",
+      "DIVERGENCE_DEFINITION",
+      "EXPLORATORY_ONLY",
+      "FAMILY_ALPHA",
+      "G4_PRIME_SEMANTICS",
+      "GENERAL_EDGE_INVARIANT",
+      "HOLM_ALPHA_FOR_POWER",
+      "MAX_CONFIRMATORY_SEEDS",
+      "N_MIN_CONFIRMATORY_SEEDS",
+      "PERCENTILE_CONVENTION",
+      "PERMUTATION_N_FLIPS",
+      "PERMUTATION_RNG_SEED",
+      "POWER_TARGET",
+      "PREVIOUS_PROTOCOL_VERSION",
+      "REPRODUCIBILITY_LIMITATIONS",
+      "RETIRED_ARTIFACTS",
+      "RETIRED_CONSTANTS",
+      "RULE_H_CONDITIONS",
+      "SEED_COUNT_RULE",
+      "SESOI_FRACTION_OF_OPTIMUM",
+      "T8_SPEC",
+      "VARIANCE_PILOT_SEEDS",
+      "_AMENDED_STATUS"
+    ],
+    "unchanged_count": 39,
+    "only_expected_changes": true,
+    "retired_values_preserved_exactly": true,
+    "key_frozen_values": {
+      "BETA_LEVELS": [
+        -0.5,
+        0.0,
+        0.5,
+        1.0,
+        1.5,
+        2.0
+      ],
+      "RHO_C": {
+        "-0.5": -0.2,
+        "0.0": 0.0,
+        "0.5": 0.2,
+        "1.0": 0.4,
+        "1.5": 0.6,
+        "2.0": 0.8
+      },
+      "SIGMA_R": 1.25,
+      "SIGMA_W": 0.5,
+      "MU_R": -2.995732273553991,
+      "MU_W": 4.343805421853684,
+      "R_CLIP": [
+        0.001,
+        0.95
+      ],
+      "TOKEN_CLIP": [
+        8,
+        400
+      ],
+      "N_DOCS": 25,
+      "EMBED_DIM": 64,
+      "N_TOPICS": 5,
+      "REDUNDANCY_LEVELS": {
+        "low": 0.15,
+        "high": 0.7
+      },
+      "BUDGET_LEVELS": {
+        "tight": 0.25,
+        "medium": 0.6,
+        "loose": 1.5
+      },
+      "OBJECTIVE_LAMBDA": 0.1,
+      "MMR_LAMBDA": 0.5,
+      "MIN_TOKEN_CV": 0.3,
+      "BETA_TOLERANCE": 0.15,
+      "CONFIRMATORY_SEEDS": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59
+      ],
+      "PILOT_SEEDS": [
+        1000,
+        1001,
+        1002,
+        1003,
+        1004
+      ],
+      "POLY_LINEAR": [
+        -5,
+        -3,
+        -1,
+        1,
+        3,
+        5
+      ],
+      "POLY_QUADRATIC": [
+        5,
+        -1,
+        -4,
+        -4,
+        -1,
+        5
+      ]
+    }
+  },
+  "code_integrity": {
+    "observed": {
+      "optimizer.py": "facfb186ddcc",
+      "benchmark.py": "5ce79b512ae3",
+      "embedder.py": "c22a456f2f46",
+      "experiments/controlled/generator.py": "d7ccf7907794",
+      "experiments/controlled/protocol.py": "566481725b48",
+      "experiments/elasticity/generator.py": "351949f310ba"
+    },
+    "expected": {
+      "optimizer.py": "facfb186ddcc",
+      "benchmark.py": "5ce79b512ae3",
+      "experiments/controlled/generator.py": "d7ccf7907794",
+      "experiments/controlled/protocol.py": "566481725b48",
+      "embedder.py": "c22a456f2f46",
+      "experiments/elasticity/generator.py": "351949f310ba"
+    },
+    "all_match": true
+  },
+  "step4_step5_artifacts": {
+    "n_files": 11,
+    "latest_mtime_utc": "2026-09-15T19:38:49Z",
+    "no_file_modified_after_step5": true,
+    "full_experiment_rows": 5400,
+    "ilp_proven": 1080,
+    "ilp_rows": 1080,
+    "sha256_baseline_recorded_now": {
+      "results/controlled/full_analysis.json": "6454014779815fa977513d0e7692fd8d2e7bee3174d4ef47bd4a1d9b18f45fba",
+      "results/controlled/full_analysis_cells.csv": "f64e3b420d2774104265cc0e1e03922c8922c614d593aeca74a29c44788697ce",
+      "results/controlled/full_analysis_report.txt": "3630050084e704cd29809cd0e50f3bce9ef5c2d2122793e86aa2678b772c66b7",
+      "results/controlled/full_experiment.csv": "104cec859d5727d29b573f6d33df1576c28f93b7fffd21c375ffe328bb039e53",
+      "results/controlled/full_experiment.json": "6be10d2ea896439225038319a48272a08928c07df54f0cc9adc0a3e4e1f7f503",
+      "results/controlled/full_experiment_manifest.json": "e8f585ea4db9428fc6e0c389fe6fce3865aa0961328f84abf3963bb65eab740f",
+      "results/controlled/pilot_report.csv": "45900471e36bb6f450d3b8a9f3bf29edf19a2c89efd6ac5b68b212ebeac188fa",
+      "results/controlled/pilot_report.json": "fa34b5344418044e016e4236af4932ee4a652209dfd34767574b63d99e309e6a",
+      "results/controlled/preflight_report.csv": "3eb087b16007538d906ad62f665b183281fa58d5854f294a4e263838654636d0",
+      "results/controlled/preflight_report.json": "2c0e6748ee021cd4aaf0c704b33c4d98863fc9af0b2f4b3e9fb7074c23b7edfb",
+      "results/controlled/step5_audit.json": "f21df26b83aefd749b50882660fdc2ff823ecb129e6638a2adfe3b57604eed7e"
+    },
+    "note": "No byte-level hash baseline for results/controlled was persisted before 6.1 (the 6.0 preflight compared hashes in memory and stored only the file count). Verification is by mtime plus content QC; hashes are recorded now as the baseline for all later steps."
+  },
+  "confirmatory_seeds_untouched": {
+    "files_scanned": [
+      "results/elasticity/amendment_6_1_audit.OVERWRITTEN_20260916T101943Z_old_script_run_under_6_2_proposed.json",
+      "results/elasticity/amendment_6_2_lock_candidate_audit.json",
+      "results/elasticity/amendment_6_2_proposed_audit.json",
+      "results/elasticity/amendment_6_2_proposed_r2_audit.json",
+      "results/elasticity/design_repair_analysis.json",
+      "results/elasticity/pilot_rows.json",
+      "results/elasticity/preflight_generator_instances.csv",
+      "results/elasticity/preflight_report.json",
+      "results/elasticity/preflight_saturation.csv",
+      "results/elasticity/protocol_lock.json",
+      "results/elasticity/tost_margin.json",
+      "results/elasticity/tost_margin.json.RETIRED.json"
+    ],
+    "outcome_hits_for_seeds_below_1000": [],
+    "pilot_row_seeds": [
+      1000,
+      1001,
+      1002,
+      1003,
+      1004
+    ],
+    "variance_pilot_seeds_already_used": false,
+    "pass": true
+  },
+  "retired_tost": {
+    "artifact_sha256": "f16f11017702ebbf8fb5f681532ed543c0ebe26e982c063acc895e1334c2a29d",
+    "sidecar_sha256": "f16f11017702ebbf8fb5f681532ed543c0ebe26e982c063acc895e1334c2a29d",
+    "preserved_byte_identical": true,
+    "analysis_refuses_artifact": true,
+    "analysis_has_no_tost_functions": true,
+    "no_top_level_TOST_constants": true,
+    "static_imports_of_retired_tost": [
+      "experiments/elasticity/run_preflight.py"
+    ],
+    "textual_references_only": [
+      "experiments/elasticity/analysis.py",
+      "tests/test_elasticity.py"
+    ],
+    "legacy_6_0_executables": [
+      "experiments/elasticity/run_preflight.py"
+    ],
+    "legacy_runner_refuses_under_current_protocol": true,
+    "active_analysis_runtime_loads_retired_tost": false,
+    "active_analysis_dependencies_on_retired_tost": []
+  },
+  "confirmatory_family": [
+    {
+      "test_id": "T1",
+      "estimand": "profile of mean Delta_gap across the 6 beta levels",
+      "budget_level": "tight",
+      "beta_levels": [
+        -0.5,
+        0.0,
+        0.5,
+        1.0,
+        1.5,
+        2.0
+      ],
+      "unit": "seed x beta, redundancy-mean Delta_gap",
+      "statistic": "friedman",
+      "h0": "the 6 level distributions are equal",
+      "h1": "at least one differs",
+      "sidedness": "two",
+      "status": "confirmatory",
+      "family": "F1"
+    },
+    {
+      "test_id": "T2",
+      "estimand": "mean Delta_gap at beta = +1.0",
+      "budget_level": "tight",
+      "beta_levels": [
+        1.0
+      ],
+      "unit": "seed, redundancy-mean Delta_gap (zeros retained)",
+      "statistic": "signflip_mean",
+      "h0": "mean Delta_gap = 0",
+      "h1": "mean Delta_gap != 0",
+      "sidedness": "two",
+      "status": "confirmatory",
+      "family": "F1"
+    },
+    {
+      "test_id": "T3",
+      "estimand": "mean Delta_gap at beta = +1.5",
+      "budget_level": "tight",
+      "beta_levels": [
+        1.5
+      ],
+      "unit": "seed, redundancy-mean Delta_gap (zeros retained)",
+      "statistic": "signflip_mean",
+      "h0": "mean Delta_gap = 0",
+      "h1": "mean Delta_gap != 0",
+      "sidedness": "two",
+      "status": "confirmatory",
+      "family": "F1"
+    },
+    {
+      "test_id": "T4",
+      "estimand": "mean Delta_gap at beta = +2.0 (E hinge)",
+      "budget_level": "tight",
+      "beta_levels": [
+        2.0
+      ],
+      "unit": "seed, redundancy-mean Delta_gap (zeros retained)",
+      "statistic": "signflip_mean",
+      "h0": "mean Delta_gap = 0",
+      "h1": "mean Delta_gap != 0",
+      "sidedness": "two",
+      "status": "confirmatory",
+      "family": "F1"
+    },
+    {
+      "test_id": "T6",
+      "estimand": "linear orthogonal contrast over the 6 levels",
+      "budget_level": "tight",
+      "beta_levels": [
+        -0.5,
+        0.0,
+        0.5,
+        1.0,
+        1.5,
+        2.0
+      ],
+      "unit": "seed contrast score over redundancy-mean Delta_gap",
+      "statistic": "signflip_contrast_linear",
+      "h0": "mean contrast score = 0",
+      "h1": "!= 0",
+      "sidedness": "two",
+      "status": "confirmatory",
+      "family": "F1"
+    },
+    {
+      "test_id": "T7",
+      "estimand": "quadratic orthogonal contrast over the 6 levels",
+      "budget_level": "tight",
+      "beta_levels": [
+        -0.5,
+        0.0,
+        0.5,
+        1.0,
+        1.5,
+        2.0
+      ],
+      "unit": "seed contrast score over redundancy-mean Delta_gap",
+      "statistic": "signflip_contrast_quadratic",
+      "h0": "mean contrast score = 0",
+      "h1": "!= 0",
+      "sidedness": "two",
+      "status": "confirmatory",
+      "family": "F1"
+    },
+    {
+      "test_id": "T8",
+      "estimand": "within-level slope of P(selection SETS differ) on centred D, probability points per unit D (R-primary; protocol.T8_SPEC)",
+      "budget_level": "tight",
+      "beta_levels": [
+        -0.5,
+        0.0,
+        0.5,
+        1.0,
+        1.5,
+        2.0
+      ],
+      "unit": "instance-level binary divergence, seed as cluster",
+      "statistic": "cluster_signflip_score_slope",
+      "h0": "b = 0",
+      "h1": "b > 0",
+      "sidedness": "one_greater",
+      "status": "confirmatory",
+      "family": "F1"
+    },
+    {
+      "test_id": "T9",
+      "estimand": "profile of mean Delta_gap across the 6 beta levels",
+      "budget_level": "loose",
+      "beta_levels": [
+        -0.5,
+        0.0,
+        0.5,
+        1.0,
+        1.5,
+        2.0
+      ],
+      "unit": "seed x beta, redundancy-mean Delta_gap",
+      "statistic": "friedman",
+      "h0": "the 6 level distributions are equal",
+      "h1": "at least one differs",
+      "sidedness": "two",
+      "status": "confirmatory",
+      "family": "F1"
+    },
+    {
+      "test_id": "T10",
+      "estimand": "quadratic orthogonal contrast over the 6 levels",
+      "budget_level": "medium",
+      "beta_levels": [
+        -0.5,
+        0.0,
+        0.5,
+        1.0,
+        1.5,
+        2.0
+      ],
+      "unit": "seed contrast score over redundancy-mean Delta_gap",
+      "statistic": "signflip_contrast_quadratic",
+      "h0": "mean contrast score = 0",
+      "h1": "!= 0",
+      "sidedness": "two",
+      "status": "confirmatory",
+      "family": "F1"
+    }
+  ],
+  "exploratory_only": [
+    "one-document optima and ILP cardinality by beta",
+    "hurdle decomposition: P(divergence) and conditional Delta_gap given divergence, per beta and budget",
+    "tight rho = 0.30 sensitivity level",
+    "95% interval for mean Delta_gap per beta level with SESOI band (replaces T5)",
+    "G4 statistics (n_selected distribution per method at tight)"
+  ],
+  "tests": {
+    "tests/test_optimizer.py": {
+      "exit": 0,
+      "pass": 44,
+      "tail": "0 failure(s)"
+    },
+    "tests/test_controlled_generator.py": {
+      "exit": 0,
+      "pass": 28,
+      "tail": "0 failure(s)"
+    },
+    "tests/test_elasticity.py": {
+      "exit": 0,
+      "pass": 30,
+      "tail": "0 failure(s)"
+    },
+    "tests/test_seed_count.py": {
+      "exit": 0,
+      "pass": 25,
+      "tail": "0 failure(s)"
+    }
+  },
+  "v6_2_checks": {
+    "1_U_SC0_is_R2": true,
+    "2_U_SC1_frozen_friedman": true,
+    "3_U_SC2a_fixed_generator_only_DeltaD": true,
+    "3b_DeltaD_quantile_method_locked": true,
+    "4_U_SC5a_fixed_seeds_0_59": true,
+    "5_edge_rules_explicit": true,
+    "5b_rule_h_operational": true,
+    "6_map_deterministic_given_pilot_quantities": true,
+    "7_no_pilot_output_can_alter_definitions": true,
+    "8_seeds_2000_2039_untouched": true,
+    "9_no_new_comparison_outcomes": true,
+    "detail": {
+      "fixed_functions": [
+        "fixed_opt_b",
+        "fixed_E_Q",
+        "fixed_delta_D"
+      ],
+      "files_with_seed_2000_2039": [],
+      "outcome_bearing_files": [
+        {
+          "file": "results/elasticity/pilot_rows.json",
+          "mtime_utc": "2026-09-16T09:52:36Z",
+          "instance_seeds": [
+            1000,
+            1001,
+            1002,
+            1003,
+            1004
+          ]
+        }
+      ],
+      "synthetic_determinism_probe_note": "n_final evaluated 3x on SYNTHETIC inputs only, to verify determinism; no pilot or experimental value",
+      "numeric_value_scan_hits": [],
+      "historical_disclosures": [
+        {
+          "what": "unconstrained SATURATION ILP (W_sat) on seeds 0-59",
+          "when": "6B preflight, 2026-09-16",
+          "artifact": "results/elasticity/preflight_saturation.csv",
+          "rows": 720,
+          "why_not_a_violation": "outcome-blind budget construction, a different quantity from the budget-level reference optimum OPT_b; no OPT_b, delta_b or Delta_D was computed"
+        },
+        {
+          "what": "per-instance D values and beta_hat on seeds 0-59 (generator diagnostics)",
+          "when": "6B preflight",
+          "artifact": "results/elasticity/preflight_generator_instances.csv",
+          "why_not_a_violation": "the Delta_D STATISTIC was never computed from them"
+        },
+        {
+          "what": "variance components and illustrative required-n on the EARLIER pilot seeds 1000-1004",
+          "when": "6B.1 design-repair analysis",
+          "artifact": "results/elasticity/design_repair_analysis.json",
+          "why_not_a_violation": "not the variance-pilot population P (2000-2039), not the frozen function F, and prior to R2; no quantity from it enters F"
+        }
+      ]
+    },
+    "10_percentile_method_explicit": true,
+    "11_rule_h_operational": true,
+    "12_all_formulas_and_edge_rules_frozen": true,
+    "13_no_DeltaD_computed": true,
+    "14_no_budget_level_reference_ILP_on_B": true,
+    "15_no_pilot_variance_power_n_via_frozen_F": true,
+    "remaining_unresolved": [],
+    "protocol_lockable": true
+  },
+  "verdict": {
+    "frozen_factors_ok": true,
+    "code_integrity_ok": true,
+    "step4_artifacts_ok": true,
+    "confirmatory_seeds_untouched": true,
+    "retired_artifact_ok": true,
+    "tests_ok": true,
+    "seed_count_rule_locked": true,
+    "variance_pilot_permitted": true,
+    "seed_count_rule_unresolved_items": []
+  },
+  "reproducibility_limitations": [
+    {
+      "id": "RL-1",
+      "issue": "git commit hash unobtainable: git is blocked on this machine by an unaccepted Xcode licence. Artifacts record git as 'unavailable'; file-level sha256 hashes are recorded instead. Not a reason to run the pilot.",
+      "remedy": "accept the licence (sudo xcodebuild -license) and commit before the confirmatory run"
+    },
+    {
+      "id": "RL-2",
+      "issue": "no byte-level hash baseline for results/controlled/ existed before 6.1"
+    },
+    {
+      "id": "RL-4",
+      "issue": "embedder.py was found modified on disk (2026-09-16 15:53 local, while open in the IDE; not by any command in this work): one added line of four spaces in build_corpus; AST-identical to the committed version. RESTORED byte-exact from git object blob f76e9826183a (commit 8fe4d34b2106); sha256 again c22a456f2f46. The changed hash was NOT re-recorded."
+    },
+    {
+      "id": "RL-3",
+      "issue": "INCIDENT 2026-09-16T10:19:43Z: a failed patch left the old audit script in place, and running it OVERWROTE results/elasticity/amendment_6_1_audit.json with a run under 6.2-proposed. The original 6.1 audit bytes are lost. The overwritten file was renamed '...OVERWRITTEN_20260916T101943Z_old_script_run_under_6_2_proposed.json'. The 6.1 record survives only as transcribed in docs/elasticity_amendment_6_1.md (protocol.py sha 10a638f3580bb6e5, analysis.py sha a05662c0eff73d0c). No experimental data were involved. The audit script now refuses to overwrite."
+    }
+  ],
+  "git_status": {
+    "available": false,
+    "reason": "Xcode licence not accepted (RL-1)"
+  }
+}

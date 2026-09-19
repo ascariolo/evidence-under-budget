@@ -1,0 +1,21 @@
+{
+  "protocol": "6.2-locked",
+  "frozen_before_pilot_utc": "2026-09-16T15:22:32Z",
+  "OPT_b": {
+    "tight": 0.9171864110119574,
+    "medium": 1.4264023642313877,
+    "loose": 1.6027771875837133
+  },
+  "delta_b": {
+    "tight": 0.02751559233035872,
+    "medium": 0.04279207092694163,
+    "loose": 0.0480833156275114
+  },
+  "Delta_D": 0.17259356739419404,
+  "E_Q": 0.06444730615394838,
+  "source_hashes": {
+    "stage1_reference_ilp_B.json": "4697e7abda46fe4dcee07c75f83909a01e3922dbf45b694e2e99e267e8b2cfee",
+    "stage2_generator_fixed_B.json": "d17e01547dc74eb1caf369dd219dbcc15eb80011514bc621272a1173fc39a8bc"
+  },
+  "immutable": "these values are inputs to the frozen n_final and are not changed by any pilot result"
+}

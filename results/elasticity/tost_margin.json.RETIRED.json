@@ -1,0 +1,9 @@
+{
+  "RETIRED": true,
+  "artifact": "results/elasticity/tost_margin.json",
+  "sha256_at_retirement": "f16f11017702ebbf8fb5f681532ed543c0ebe26e982c063acc895e1334c2a29d",
+  "retired_at": "6.1-amended",
+  "reason": "margin rule degenerate (median gap exactly 0; fallback triggered by IQR = 2.8e-17 float noise); T5 answers no hypothesis's distinctive prediction",
+  "sidecar": "results/elasticity/tost_margin.json.RETIRED.json",
+  "note": "original file is preserved byte-identical and must not be used"
+}

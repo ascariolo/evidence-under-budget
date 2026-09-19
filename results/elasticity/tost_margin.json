@@ -1,0 +1,19 @@
+{
+  "margin": 0.03,
+  "rule": {
+    "n": 60,
+    "median_unrounded": 0.0,
+    "iqr_unrounded": 2.7755575615628914e-17,
+    "unstable": true,
+    "rule": "fallback 0.03",
+    "m": 0.03
+  },
+  "pilot_seeds": [
+    1000,
+    1001,
+    1002,
+    1003,
+    1004
+  ],
+  "protocol_version": "6.0-preflight"
+}
