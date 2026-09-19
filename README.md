@@ -1,6 +1,6 @@
-# Context Knapsack
+# Evidence Under Budget
 
-**Does token-aware context selection actually retrieve better evidence? We pre-registered the question, ran it on HotpotQA, and the answer came back "no".**
+**Does token-aware context selection recover better evidence? We pre-registered the question, ran it on HotpotQA, and the answer came back "no".**
 
 This repository is a study, not a product pitch. It formulates LLM context selection as a
 Quadratic Knapsack Problem, implements four heuristics plus an exact ILP, and then tests —
