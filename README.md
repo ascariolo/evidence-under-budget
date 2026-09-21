@@ -35,7 +35,7 @@ are practically important. See [Scope](#what-this-does-and-does-not-support).
 
 ## Problem formulation
 
-Let $D = \{d_1, \dots, d_N\}$ be the candidates returned for query $q$, with
+Let $D = \lbrace d_1, \dots, d_N \rbrace$ be the candidates returned for query $q$, with
 
 - relevance $r_i = \cos(e_q, e_i) \in [-1, 1]$
 - pairwise similarity $s_{ij} = \cos(e_i, e_j)$, clipped to $[0, 1]$ inside the solver
@@ -44,13 +44,13 @@ Let $D = \{d_1, \dots, d_N\}$ be the candidates returned for query $q$, with
 Select $S \subseteq D$ maximizing
 
 $$
-\max_{S \subseteq D} \; \mathrm{Score}(S) = \sum_{i \in S} r_i \; - \; \lambda_{\mathrm{obj}} \sum_{i < j \,\in\, S} s_{ij}
+\max_{S \subseteq D} \quad \mathrm{Score}(S) = \sum_{i \in S} r_i - \lambda_{\mathrm{obj}} \sum_{i \lt j \in S} s_{ij}
 \qquad \text{s.t.} \qquad \sum_{i \in S} w_i \le W_{\max}
 $$
 
 This is the Quadratic Knapsack Problem: a linear knapsack with a negative pairwise
 interaction term, NP-hard. Setting $\lambda_{\mathrm{obj}} = 0$ recovers the linear knapsack;
-equal $w_i$ with $\lambda_{\mathrm{obj}} > 0$ gives a summed-penalty relative of MMR.
+equal $w_i$ with $\lambda_{\mathrm{obj}} \gt 0$ gives a summed-penalty relative of MMR.
 
 The default is $\lambda_{\mathrm{obj}} = 0.1$. Relevance grows as $O(|S|)$ while the penalty
 grows as $O(|S|^2)$, so a $\lambda$ borrowed from MMR — where the penalty is a **max**, not a
@@ -64,17 +64,17 @@ All heuristics share one **stopping policy**: candidate $i$ is eligible iff it i
 $w_i \le$ remaining budget, and its marginal gain is positive,
 
 $$
-\Delta_i = r_i - \lambda_{\mathrm{obj}} \sum_{j \in S} s_{ij} > 0 .
+\Delta_i = r_i - \lambda_{\mathrm{obj}} \sum_{j \in S} s_{ij} \gt 0 .
 $$
 
 They differ only in how they rank the eligible candidates:
 
 | Solver | Selection rule |
 |---|---|
-| `solve_top_k` | $\arg\max_i \; r_i$ |
-| `solve_mmr` | $\arg\max_i \; \lambda_{\mathrm{mmr}} r_i - (1-\lambda_{\mathrm{mmr}}) \max_{j \in S} s_{ij}$ |
-| `solve_greedy_objective` | $\arg\max_i \; \Delta_i$ |
-| `solve_greedy` (token-aware) | $\arg\max_i \; \Delta_i / w_i$ |
+| `solve_top_k` | $\arg\max_i r_i$ |
+| `solve_mmr` | $\arg\max_i \lambda_{\mathrm{mmr}} r_i - (1-\lambda_{\mathrm{mmr}}) \max_{j \in S} s_{ij}$ |
+| `solve_greedy_objective` | $\arg\max_i \Delta_i$ |
+| `solve_greedy` (token-aware) | $\arg\max_i \Delta_i / w_i$ |
 
 `solve_greedy_objective` and `solve_greedy` differ **only** by the $1/w_i$ factor, which is
 what makes their difference a clean measurement of token normalization.
@@ -84,11 +84,11 @@ what makes their difference a clean measurement of token normalization.
 Binary $x_i$ selects document $i$; $y_{ij}$ linearizes the product $x_i x_j$:
 
 $$
-\max \sum_i r_i x_i - \lambda_{\mathrm{obj}} \sum_{i<j} s_{ij} y_{ij}
+\max \sum_i r_i x_i - \lambda_{\mathrm{obj}} \sum_{i \lt j} s_{ij} y_{ij}
 \quad \text{s.t.} \quad
 \sum_i w_i x_i \le W_{\max}, \quad
 y_{ij} \ge x_i + x_j - 1, \quad
-x_i \in \{0,1\}, \; y_{ij} \ge 0
+x_i \in \lbrace 0,1 \rbrace, \quad y_{ij} \ge 0
 $$
 
 Every $y_{ij}$ carries a non-positive objective coefficient, so the solver drives it to its
@@ -110,8 +110,8 @@ SHA-256 `ff807b7d…1d0daa5`, verified at runtime by the code before every run.
 | Data | HotpotQA dev, distractor setting, 500 questions, frozen permutation (seed 7000) |
 | Candidate unit | sentence (all sentences of the 10 paragraphs) |
 | Relevance | cosine against `all-MiniLM-L6-v2`, local, no paid API |
-| Budgets | $W_{\max} = \lfloor \rho \cdot W_{\mathrm{pool}} \rfloor$, $\rho \in \{0.10, 0.25, 0.50\}$ |
-| Outcome | supporting-fact coverage $C(S) = \|S \cap G(q)\| / \|G(q)\|$ |
+| Budgets | $W_{\max} = \lfloor \rho \cdot W_{\mathrm{pool}} \rfloor$, $\rho \in \lbrace 0.10, 0.25, 0.50 \rbrace$ |
+| Outcome | supporting-fact coverage $C(S) = \lvert S \cap G(q) \rvert / \lvert G(q) \rvert$ |
 | Estimand | $\Delta_C = C(\mathrm{TA}) - C(\mathrm{GO})$ |
 | Confirmatory test | two-sided paired sign-flip permutation, 10,000 flips, Holm across exactly 3 budgets |
 | SESOI | none specified, deliberately |
@@ -147,7 +147,7 @@ TA vs GO on coverage was tested; every other comparison in these two tables is d
 - **The best-singleton guard never fired.** In all 1500 instances it returned exactly the
   token-aware selection. The pathological case from the budgeted-submodular literature (cheap
   high-density items crowding out one valuable expensive item) did not occur here.
-- **The pre-hoc diagnostic failed.** $D = 1 - \tau_b(r,\, r/w)$ shows no association with
+- **The pre-hoc diagnostic failed.** $D = 1 - \tau_b(r, r/w)$ shows no association with
   $\Delta_C$: Spearman $+0.027$, $-0.069$, $-0.039$, all bootstrap CIs containing zero. It was
   pre-registered as exploratory; no threshold was searched for.
 - **ILP**: 58 of 100 in-scope instances proved optimal within the 60 s cap (mean 12.0 s).
@@ -160,14 +160,14 @@ TA vs GO on coverage was tested; every other comparison in these two tables is d
 ## What this does and does not support
 
 **Supported.** Within this QKP formulation, on HotpotQA distractor, with sentence-level
-candidates, MiniLM relevance, and $\rho \in \{0.10, 0.25, 0.50\}$: token normalization lowers
-supporting-fact coverage relative to unnormalized greedy, most strongly at the tightest
-budget, while raising the objective score at the two tight budgets.
+candidates, MiniLM relevance, and $\rho \in \lbrace 0.10, 0.25, 0.50 \rbrace$: token
+normalization lowers supporting-fact coverage relative to unnormalized greedy, most
+strongly at the tightest budget, while raising the objective score at the two tight budgets.
 
 **Not supported.** That token normalization is generally harmful — outside this objective,
 corpus, granularity, relevance model, or budget range, nothing here applies. That any of
 these differences matter practically: no SESOI exists, no external threshold for
-supporting-fact coverage is established, and $p < 0.05$ does not answer that question. That
+supporting-fact coverage is established, and $p \lt 0.05$ does not answer that question. That
 better packing produces better answers: no generative evaluator was used. Any causal claim
 about corpus properties and $\Delta_C$. Any inferential claim involving top-k, MMR, the
 guard, or the ILP, all of which are descriptive only.
