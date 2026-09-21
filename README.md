@@ -126,9 +126,9 @@ token budget.
 |---|---|---|---|
 | top-k | 0.523 | 0.716 | **0.832** |
 | greedy objective (GO) | **0.531** | **0.744** | 0.816 |
-| greedy token-aware (TA) | 0.375 | 0.685 | 0.784 |
-| MMR | 0.474 | 0.642 | 0.779 |
-| token-aware + best-singleton | 0.375 | 0.685 | 0.784 |
+| greedy token-aware (TA) | 0.375 | 0.684 | 0.783 |
+| MMR | 0.474 | 0.642 | 0.778 |
+| token-aware + best-singleton | 0.375 | 0.684 | 0.783 |
 
 ### Objective score by arm
 
