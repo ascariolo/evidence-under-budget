@@ -313,5 +313,8 @@ run they govern. A stopped experiment is kept as a result, not deleted.
 
 ## License
 
-No license file is present. Until one is added, no usage rights are granted — if you intend
-this to be open source, add a `LICENSE` file.
+MIT — see [`LICENSE`](LICENSE). Copyright (c) 2026 Andrea Scariolo.
+
+The license covers the code, protocols, and results in this repository. HotpotQA is not
+distributed here; it is downloaded at runtime and carries its own license (CC BY-SA 4.0),
+as does `all-MiniLM-L6-v2` (Apache-2.0).
